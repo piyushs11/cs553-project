@@ -59,8 +59,13 @@ final case class EnrichedGraph(nodes: List[NodeDef], edges: List[EdgeDef]):
       Right(())
 
   private def validateUniqueWeights(): Either[String, Unit] =
-    val weights = edges.map(_.weight)
-    if weights.size != weights.toSet.size then
+    // Check uniqueness on undirected pairs only — (a→b) and (b→a) share
+    // the same weight by design, so we normalize to (min, max) pairs.
+    val undirectedWeights = edges.map { e =>
+      val key = if e.from < e.to then (e.from, e.to) else (e.to, e.from)
+      key -> e.weight
+    }.distinctBy(_._1).map(_._2)
+    if undirectedWeights.size != undirectedWeights.toSet.size then
       Left("GHS requires unique edge weights — duplicate weights found")
     else
       Right(())
