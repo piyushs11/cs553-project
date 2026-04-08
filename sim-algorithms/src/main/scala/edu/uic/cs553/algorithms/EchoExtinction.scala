@@ -24,6 +24,7 @@ class EchoExtinction(isInitiator: Boolean) extends DistributedAlgorithm:
   private var forwardedTo: Set[Int] = Set.empty
   private var echoesReceived: Set[Int] = Set.empty
   private var decided: Boolean = false
+  private var electedLeader: Option[Int] = None
 
   override def onStart(ctx: NodeContext): Unit =
     if isInitiator then
@@ -86,8 +87,12 @@ class EchoExtinction(isInitiator: Boolean) extends DistributedAlgorithm:
           declareVictory(ctx)
 
   private def declareVictory(ctx: NodeContext): Unit =
+    electedLeader = Some(ctx.nodeId)
     ctx.logInfo(s"*** ELECTED LEADER *** (wave $bestWaveId survived)")
     ctx.broadcast(Name, Leader(ctx.nodeId))
 
   private def handleLeader(ctx: NodeContext, leaderId: Int): Unit =
+    electedLeader = Some(leaderId)
     ctx.logInfo(s"Acknowledged leader: node-$leaderId")
+
+  def getElectedLeader: Option[Int] = electedLeader

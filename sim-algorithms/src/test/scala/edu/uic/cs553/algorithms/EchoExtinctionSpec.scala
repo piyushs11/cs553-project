@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
 import edu.uic.cs553.core.{GraphGenerator, SimConfig}
-import edu.uic.cs553.runtime.Simulator
+import edu.uic.cs553.runtime.{NodeActor, SimMessage, Simulator}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
@@ -19,16 +19,28 @@ class EchoExtinctionSpec
 
   override def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
-  // Each test runs inside a fresh child guardian to avoid actor-name collisions.
-  private def runTest(graphSeed: Long, nodeCount: Int, density: Double, testName: String): Int =
+  /** Runs the algorithm and returns the per-node EchoExtinction instances
+   *  so tests can inspect which leader each node settled on. */
+  private def runAndCollect(
+    graphSeed: Long,
+    nodeCount: Int,
+    density: Double,
+    testName: String,
+    allInitiators: Boolean
+  ): List[EchoExtinction] =
     val graph = GraphGenerator.generate(
       GraphGenerator.Config(nodeCount = nodeCount, edgeDensity = density, seed = graphSeed)
     )
     val config = SimConfig.loadDefault()
 
+    // Keep algorithm instances accessible for post-run inspection.
+    val algoInstances: Map[Int, EchoExtinction] = graph.nodes.map { n =>
+      val isInit = if allInitiators then true else n.id == 0
+      n.id -> new EchoExtinction(isInitiator = isInit)
+    }.toMap
+
     val refs = graph.nodes.map { n =>
-      val algo = new EchoExtinction(isInitiator = true)
-      val props = edu.uic.cs553.runtime.NodeActor.props(n.id, List(algo), config.seed)
+      val props = NodeActor.props(n.id, List(algoInstances(n.id)), config.seed)
       n.id -> system.actorOf(props, s"$testName-node-${n.id}")
     }.toMap
 
@@ -37,7 +49,7 @@ class EchoExtinctionSpec
       val neighborRefs = outgoing.flatMap(e => refs.get(e.to).map(e.to -> _)).toMap
       val allowed = outgoing.map(e => e.to -> e.allowedTypes).toMap
       val weights = outgoing.map(e => e.to -> e.weight).toMap
-      refs(n.id) ! edu.uic.cs553.runtime.SimMessage.Init(
+      refs(n.id) ! SimMessage.Init(
         neighbors = neighborRefs,
         allowedOnEdge = allowed,
         edgeWeights = weights,
@@ -49,25 +61,41 @@ class EchoExtinctionSpec
 
     Thread.sleep(200)
     Simulator.startAlgorithms(refs)
-    Thread.sleep(2000)
+    Thread.sleep(2500)
     refs.values.foreach(system.stop)
     Thread.sleep(300)
-    refs.size
+
+    algoInstances.values.toList
 
   "EchoExtinction" should {
 
-    "elect the highest-ID node when all nodes initiate on a small dense graph" in {
-      val count = runTest(graphSeed = 42, nodeCount = 5, density = 0.6, testName = "test1")
-      count shouldBe 5
+    "elect the highest-ID node when all nodes initiate on a dense graph" in {
+      val instances = runAndCollect(
+        graphSeed = 42, nodeCount = 5, density = 0.8,
+        testName = "correctness1", allInitiators = true
+      )
+      val leaders = instances.flatMap(_.getElectedLeader).toSet
+      leaders should not be empty
+      // All nodes that decided should agree on the maximum ID
+      leaders shouldBe Set(4) // highest ID in a 5-node graph (IDs 0..4)
     }
 
-    "complete on a larger sparser graph with all nodes initiating" in {
-      val count = runTest(graphSeed = 7, nodeCount = 8, density = 0.4, testName = "test2")
-      count shouldBe 8
+    "elect the highest-ID node on a triangle" in {
+      val instances = runAndCollect(
+        graphSeed = 100, nodeCount = 3, density = 1.0,
+        testName = "correctness2", allInitiators = true
+      )
+      val leaders = instances.flatMap(_.getElectedLeader).toSet
+      leaders shouldBe Set(2) // highest ID in a 3-node graph (IDs 0..2)
     }
 
-    "work on a small triangle graph" in {
-      val count = runTest(graphSeed = 100, nodeCount = 3, density = 1.0, testName = "test3")
-      count shouldBe 3
+    "handle a single initiator correctly" in {
+      val instances = runAndCollect(
+        graphSeed = 7, nodeCount = 6, density = 0.5,
+        testName = "correctness3", allInitiators = false
+      )
+      val leaders = instances.flatMap(_.getElectedLeader).toSet
+      // Only node 0 initiates, so node 0 should become leader
+      leaders shouldBe Set(0)
     }
   }
