@@ -34,6 +34,11 @@ final class NodeContext(
       case Some(ref) => ref ! SimMessage.AlgorithmMsg(algorithmName, nodeId, payload)
       case None => log.warning(s"[node-$nodeId] Cannot send to node $to — not a neighbor")
 
+  /** Send an algorithm message back to ourselves (used for deferred messages).
+   *  This is essential for GHS when a message can't be processed yet. */
+  def sendSelf(algorithmName: String, payload: Any): Unit =
+    selfRef ! SimMessage.AlgorithmMsg(algorithmName, nodeId, payload)
+    
   /** Send an algorithm message to ALL neighbors. */
   def broadcast(algorithmName: String, payload: Any): Unit =
     neighbors.foreach { (id, ref) =>
