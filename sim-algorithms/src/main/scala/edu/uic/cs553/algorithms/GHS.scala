@@ -84,7 +84,7 @@ class GHS extends DistributedAlgorithm:
           // Absorb the smaller fragment.
           edge.state = EdgeState.Branch
           ctx.send(from, Name, Initiate(state.level, state.fragId, state.phase))
-          ctx.logInfo(s"Absorbed node-$from (lvl $level → $state.level)")
+          ctx.logInfo(s"Absorbed node-$from (lvl $level → ${state.level})")
           if state.phase == Phase.Find then
             state = state.copy(findCount = state.findCount + 1)
         else if edge.state == EdgeState.Basic then
