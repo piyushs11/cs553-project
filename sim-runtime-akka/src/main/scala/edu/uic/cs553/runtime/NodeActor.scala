@@ -41,20 +41,29 @@ class NodeActor(
   ): Receive =
 
     case Tick =>
+      MetricsCollector.increment("timer.ticks")
       val kind = samplePdf(pdf)
       sendToEligible(kind, s"tick-$id", neighbors, allowed)
       algorithms.foreach(_.onTick(ctx))
 
     case ExternalInput(kind, payload) =>
+      MetricsCollector.increment("injected.total")
+      MetricsCollector.increment(s"injected.kind.$kind")
       sendToEligible(kind, payload, neighbors, allowed)
 
     case env: Envelope =>
       if allowed.getOrElse(env.from, Set.empty).contains(env.kind) then
+        MetricsCollector.increment("msgs.received")
+        MetricsCollector.increment(s"msgs.kind.${env.kind}")
         context.system.log.debug(s"[node-$id] Received ${env.kind} from node-${env.from}")
       else
+        MetricsCollector.increment("msgs.dropped")
+        MetricsCollector.increment(s"msgs.dropped.${env.kind}")
         context.system.log.warning(s"[node-$id] DROPPED ${env.kind} from node-${env.from}")
 
     case AlgorithmMsg(algoName, from, payload) =>
+      MetricsCollector.increment("algo.msgs.received")
+      MetricsCollector.increment(s"algo.$algoName.msgs")
       algorithms.filter(_.name == algoName).foreach(_.onMessage(ctx, from, payload))
 
     case StartAlgorithms =>
@@ -75,7 +84,11 @@ class NodeActor(
   ): Unit =
     neighbors
       .filter((to, _) => allowed.getOrElse(to, Set.empty).contains(kind))
-      .foreach((to, ref) => ref ! Envelope(from = id, kind = kind, payload = payload))
+      .foreach { (to, ref) =>
+        MetricsCollector.increment("msgs.sent")
+        MetricsCollector.increment(s"msgs.sent.$kind")
+        ref ! Envelope(from = id, kind = kind, payload = payload)
+      }
 
   private def samplePdf(pdf: Map[String, Double]): String =
     val r = rng.nextDouble()

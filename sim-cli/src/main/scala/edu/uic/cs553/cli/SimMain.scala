@@ -99,4 +99,8 @@ object SimMain:
     println("Shutting down...")
     system.terminate()
     Await.result(system.whenTerminated, 30.seconds)
+
+    // Print final metrics report
+    println()
+    println(edu.uic.cs553.runtime.MetricsCollector.report())
     println("=== Simulation complete ===")
