@@ -119,6 +119,14 @@ derives its PDF sampler from `seed + nodeId`.
 
 ---
 
+## Documentation
+
+The design report is at `docs/report.md`. It covers system architecture,
+algorithm design, message protocols, experiment results, and a reproducible
+experiment script.
+
+---
+
 ## Expected output
 
 Each run produces:
