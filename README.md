@@ -145,10 +145,14 @@ documented variants:
    complexity bound for implementation tractability; correctness against
    Kruskal's output is verified by tests. See `docs/report.md` for details.
 
-2. **Custom metrics instead of Cinnamon**. Cinnamon requires Lightbend
-   commercial credentials, which cannot be assumed on the grader's machine.
-   A custom `MetricsCollector` tracks equivalent data (message counts,
-   dropped messages, per-algorithm events) and prints a report at shutdown.
+2. **Cinnamon telemetry (commented out)**. Cinnamon requires Lightbend
+   commercial credentials. The project includes full Cinnamon configuration
+   in `build.sbt`, `project/plugins.sbt`, and `application.conf` — all
+   commented out. To enable: (a) set `LIGHTBEND_COMMERCIAL_USERNAME` and
+   `LIGHTBEND_COMMERCIAL_PASSWORD` environment variables, (b) uncomment
+   the Cinnamon lines in `build.sbt` and `plugins.sbt`, (c) uncomment
+   the `cinnamon` block in `application.conf`. A custom `MetricsCollector`
+   provides equivalent functionality without requiring credentials.
 
 3. **Graph generation without NetGameSim submodule**. We provide a standalone
    `GraphGenerator` that produces graphs satisfying GHS's requirements

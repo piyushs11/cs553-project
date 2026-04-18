@@ -18,12 +18,16 @@ lazy val simCore = project
     )
   )
 
-// sim-runtime-akka: NodeActor, Simulator, channels
+// ─── sim-runtime-akka: NodeActor, Simulator, Cinnamon ────────────────────────
 lazy val simRuntime = project
   .in(file("sim-runtime-akka"))
   .dependsOn(simCore)
+  // .enablePlugins(Cinnamon)     // Uncomment if Cinnamon credentials are available
   .settings(
     name := "sim-runtime-akka",
+    // Uncomment if Cinnamon is enabled:
+    // run  / cinnamon := true,
+    // test / cinnamon := true,
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor"              % akkaVersion,
       "com.typesafe.akka" %% "akka-actor-typed"         % akkaVersion,
@@ -32,6 +36,10 @@ lazy val simRuntime = project
       "com.typesafe.akka" %% "akka-testkit"              % akkaVersion % Test,
       "com.typesafe.akka" %% "akka-actor-testkit-typed"  % akkaVersion % Test,
       "org.scalatest"     %% "scalatest"                 % "3.2.17"   % Test,
+      // Uncomment if Cinnamon is enabled:
+      // Cinnamon.library.cinnamonAkka,
+      // Cinnamon.library.cinnamonCHMetrics,
+      // Cinnamon.library.cinnamonJvmMetricsProducer,
     )
   )
 
