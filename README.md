@@ -167,26 +167,3 @@ documented variants:
    (connected, unique edge weights) with configurable size and density. The
    system also loads graphs from JSON via `GraphLoader`, so a NetGameSim
    artifact could be plugged in if desired.
-
----
-
-## Rubric self-check
-
-| Rubric item | Status |
-|-------------|--------|
-| Scala 3.x | ✅ Scala 3.3.3 |
-| ≥ 5 ScalaTest tests | ✅ 17 tests |
-| Code comments on design rationale | ✅ yes |
-| Meaningful logging | ✅ init, milestones, results, metrics |
-| Configuration-driven (no hardcoding) | ✅ HOCON + reference.conf |
-| Actor-local `var` justified | ✅ commented per usage |
-| Collection combinators (no induction loops) | ✅ map/foreach/foldLeft only |
-| Clean install+run from README | ✅ this file |
-| No crashes on completion | ✅ verified |
-| IntelliJ clean import | ✅ multi-module SBT |
-| `sbt compile` / `sbt test` pass | ✅ 17/17 |
-| No blocking in actors | ✅ only main-thread `Thread.sleep` |
-| Sealed message algebra | ✅ case classes throughout |
-| Determinism controls | ✅ seed per config |
-| Cinnamon | ⚠️ substituted with MetricsCollector (see docs) |
-| Repository hygiene | ✅ `.gitignore` for `target/`, `.idea/` |
